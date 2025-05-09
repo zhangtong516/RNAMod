@@ -1,0 +1,20 @@
+process CALCULATE_SIZE_FACTORS {
+    storeDir "${params.outdir}/size_factors", mode: 'copy'
+    
+    container 'https://depot.galaxyproject.org/singularity/r-deseq2:1.34.0--r41h399db7b_0'
+    
+    input:
+    path m6a_counts
+    path input_counts
+    
+    output:
+    path "size_factors.txt"
+    
+    script:
+    """
+    Rscript ${baseDir}/bin/calculate_size_factors.R \
+        ${m6a_counts} \
+        ${input_counts} \
+        size_factors.txt
+    """
+}
