@@ -34,19 +34,14 @@ if (params.help) {
     Options:
       --samplesheet     CSV file containing sample information (default: $params.samplesheet)
       --outdir          Output directory (default: $params.outdir)
-      --host_genome     Host genome for removal (default: $params.host_genome)
-      --gtf             Directory for databases (default: $params.gtf)
+      --batchName       Batch name for processing (default: $params.batchName)
       --help            Show this message
     """
     exit 0
 }
 
 // Create channel for input reads
-Channel
-    .fromPath(params.samplesheet)
-    .splitCsv(header:true)
-    .map { row -> tuple(row.sample, file(row.r1), file(row.r2)) }
-    .set { input_reads }
+input_reads= process_sample_name(params.samplesheet, params.batchName, "reads")
 
 // Main workflow
 workflow {
@@ -62,18 +57,18 @@ workflow {
     // Count features and calculate size factors
     FEATURE_COUNTS(STAR_ALIGN.out.aligned_bam)
     
-    // Calculate size factors for m6A and m7G separately
-    CALCULATE_SIZE_FACTORS(
-        FEATURE_COUNTS.out.count_files.collect{ it[1] }.filter{ it.name =~ /m6A|m7G/ },
-        FEATURE_COUNTS.out.count_files.collect{ it[1] }.filter{ it.name =~ /input/ }
-    )
+
+    // CALCULATE_SIZE_FACTORS(
+    //     FEATURE_COUNTS.out.count_files.collect{ it[1] }.filter{ it.name =~ /m6A|m7G/ },
+    //     FEATURE_COUNTS.out.count_files.collect{ it[1] }.filter{ it.name =~ /input/ }
+    // )
     
     // Generate coverage tracks
     STAR_ALIGN.out.aligned_bam
         .map{ key, value ->
             // Extract the "grouping" key: first three parts separated by '_'
-            def groupKey = key.split('_')[0..2].join('_')
-            def type = key.split('_')[2]  // this determines if it's an x or y type
+            def groupKey = key.split('__')[0..2].join('__')
+            def type = key.split('__')[2]  // this determines if it's an x or y type
             [groupKey, type, value]
         }.groupTuple( it[0])
         .map { groupKey, list ->
@@ -83,8 +78,6 @@ workflow {
             [groupKey, xs, ys]
         }.set { chanel_for_peak_calling}
 
-    // BAM_COVERAGE(m6a_bam_pairs.mix(m7g_bam_pairs))
-
     // Call peaks using MACS2
     MACS2_PEAK_CALLING(chanel_for_peak_calling)
     
@@ -92,6 +85,7 @@ workflow {
     PEAK_ANNOTATION(MACS2_PEAK_CALLING.out.peaks, params.gtf)
     
     // Run QC module to collect and summarize metrics
+    ch_for_qc = 
     QC(
         FASTP.out.json_report,
         STAR_ALIGN.out.log_final
@@ -101,11 +95,29 @@ workflow {
 // extra functions to play with the sample name
 // Sample is named in the format: [sample_name]_[libtype]_[replicate]
 // e.g.  ES_DC_m7G_2 and ES_DC_input_2 
-def process_sample_name(condition, mode="merge_replicate", sep="_") {
+def process_sample_name(condition, mode="merge_replicate", sep="__") {
     def p = condition.toString().split(sep)
     if(mode == "sample") { result = p[0] + sep + p[1] }
     if(mode == "sample_lib") { result = p[0] + sep + p[1] + sep + p[2] }
     if(mode == "sample_lib_rep") { result = p[0] + sep + p[1] + sep + p[2] + sep + p[3] } 
     return(result)
-
 }
+
+def process_sampleinfo(tsvFile, batchName, mode) {
+    Channel.from(tsvFile)
+        .splitCsv(sep: '\t', header: true)
+        .map { row ->
+            def sample          = row.sampleName // Sample01
+            def batch           = row.compBatch //example: batch1
+            def libType         = row.libType // m6A or m7G etc. 
+            def treatment       = row.treatment // Input or treated etc. 
+            def replicate       = row.replicate // 1 or 2 etc. 
+            def read1           = row.r1 // file with full path
+            def read2           = row.r2 // file with full path
+            def condition       = sample + "__" + libType + "__" + treatment 
+            def unique_name     = condition + "__" + replicate
+
+            if (mode == "reads" && batch == batchName) return [ unique_name, file(read1), file(read2) ]
+        }
+        .unique()
+    } 
