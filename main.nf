@@ -41,7 +41,13 @@ if (params.help) {
 }
 
 // Create channel for input reads
-input_reads= process_sampleinfo(params.samplesheet, params.batchName, "reads")
+
+Channel
+    .fromPath(params.samplesheet)
+    .splitCsv(header:true)
+    .map { row -> tuple(row.sampleName +"__" +row.libType +"__" +row.treatment +"__" +row.replicate,
+                        file(row.r1), file(row.r2)) }
+    .set { input_reads }
 
 // Main workflow
 workflow {
@@ -103,32 +109,3 @@ workflow {
     )
 }
 
-// extra functions to play with the sample name
-// Sample is named in the format: [sample_name]_[libtype]_[replicate]
-// e.g.  ES_DC_m7G_2 and ES_DC_input_2 
-def process_sample_name(condition, mode="merge_replicate", sep="__") {
-    def p = condition.toString().split(sep)
-    if(mode == "sample") { result = p[0] + sep + p[1] }
-    if(mode == "sample_lib") { result = p[0] + sep + p[1] + sep + p[2] }
-    if(mode == "sample_lib_rep") { result = p[0] + sep + p[1] + sep + p[2] + sep + p[3] } 
-    return(result)
-}
-
-def process_sampleinfo(tsvFile, batchName, mode) {
-    Channel.from(tsvFile)
-        .splitCsv(sep: '\t', header: true)
-        .map { row ->
-            def sample          = row.sampleName // Sample01
-            def batch           = row.compBatch //example: batch1
-            def libType         = row.libType // m6A or m7G etc. 
-            def treatment       = row.treatment // Input or treated etc. 
-            def replicate       = row.replicate // 1 or 2 etc. 
-            def read1           = row.r1 // file with full path
-            def read2           = row.r2 // file with full path
-            def condition       = sample + "__" + libType + "__" + treatment 
-            def unique_name     = condition + "__" + replicate
-
-            if (mode == "reads" && batch == batchName) return [ unique_name, file(read1), file(read2) ]
-        }
-        .unique()
-    }

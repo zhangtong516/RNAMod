@@ -24,7 +24,7 @@ process FASTP {
         --detect_adapter_for_pe \
         --n_base_limit 5 \
         --length_required 50 \
-        --thread ${params.threads}
+        --thread ${task.cpus}
         --qualified_quality_phred 30 \
         --thread ${task.cpus} 
     """

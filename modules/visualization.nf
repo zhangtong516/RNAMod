@@ -1,3 +1,5 @@
+params.outdir = "$projectDir/results"
+
 process BAM_COVERAGE {
     storeDir "${params.outdir}/bigwig", mode: 'copy'
     
