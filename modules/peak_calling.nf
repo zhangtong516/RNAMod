@@ -29,7 +29,7 @@ process MACS2_PEAK_CALLING {
         -n ${sample_id}
     
     # Filter high-confidence peaks (log-q-value < 10)
-    awk '$9 > 10' ${sample_id}_peaks.narrowPeak > ${sample_id}_filtered_peaks.narrowPeak
+    awk '\$9 > 10' ${sample_id}_peaks.narrowPeak > ${sample_id}_filtered_peaks.narrowPeak
     
     # Rename filtered peaks to standard output name for downstream processing
     mv ${sample_id}_filtered_peaks.narrowPeak ${sample_id}_peaks.narrowPeak

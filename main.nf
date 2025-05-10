@@ -41,7 +41,7 @@ if (params.help) {
 }
 
 // Create channel for input reads
-input_reads= process_sample_name(params.samplesheet, params.batchName, "reads")
+input_reads= process_sampleinfo(params.samplesheet, params.batchName, "reads")
 
 // Main workflow
 workflow {
@@ -70,14 +70,25 @@ workflow {
             def groupKey = key.split('__')[0..2].join('__')
             def type = key.split('__')[2]  // this determines if it's an x or y type
             [groupKey, type, value]
-        }.groupTuple( it[0])
-        .map { groupKey, list ->
+        }
+        .groupTuple(by: 0) // Use the 'by' parameter to specify grouping by the first element
+        .map { groupKey, types, values ->
             // Split into x and y lists
-            def xs = list.findAll { it[1] == 'm6A|m7G' }.collect { it[2] }
-            def ys = list.findAll { it[1] == 'Input' }.collect { it[2] }
+            def xs = []
+            def ys = []
+            
+            for (int i = 0; i < types.size(); i++) {
+                if (types[i] == 'm6A|m7G') {
+                    xs.add(values[i])
+                } else if (types[i] == 'Input') {
+                    ys.add(values[i])
+                }
+            }
+            
             [groupKey, xs, ys]
-        }.set { chanel_for_peak_calling}
-
+        }
+        .set { chanel_for_peak_calling }
+    
     // Call peaks using MACS2
     MACS2_PEAK_CALLING(chanel_for_peak_calling)
     
@@ -120,4 +131,4 @@ def process_sampleinfo(tsvFile, batchName, mode) {
             if (mode == "reads" && batch == batchName) return [ unique_name, file(read1), file(read2) ]
         }
         .unique()
-    } 
+    }
