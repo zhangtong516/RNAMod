@@ -42,19 +42,19 @@ process COLLECT_QC_METRICS {
             content = f.read()
             
             # Extract mapping rates
-            input_reads_match = re.search(r'Number of input reads \|\s+(\d+)', content)
+            input_reads_match = re.search(r'Number of input reads \\|\\s+(\\d+)', content)
             if input_reads_match:
                 results[sample_id]['input_reads'] = int(input_reads_match.group(1))
                 
-            uniquely_mapped_match = re.search(r'Uniquely mapped reads % \|\s+([\d\.]+)%', content)
+            uniquely_mapped_match = re.search(r'Uniquely mapped reads % \\|\\s+([\\d\\.]+)%', content)
             if uniquely_mapped_match:
                 results[sample_id]['uniquely_mapped_rate'] = float(uniquely_mapped_match.group(1))
                 
-            multi_mapped_match = re.search(r'% of reads mapped to multiple loci \|\s+([\d\.]+)%', content)
+            multi_mapped_match = re.search(r'% of reads mapped to multiple loci \\|\\s+([\\d\\.]+)%', content)
             if multi_mapped_match:
                 results[sample_id]['multi_mapped_rate'] = float(multi_mapped_match.group(1))
                 
-            total_mapped_match = re.search(r'% of reads mapped to too many loci \|\s+([\d\.]+)%', content)
+            total_mapped_match = re.search(r'% of reads mapped to too many loci \\|\\s+([\\d\\.]+)%', content)
             if total_mapped_match:
                 too_many_loci = float(total_mapped_match.group(1))
                 results[sample_id]['total_mapping_rate'] = results[sample_id]['uniquely_mapped_rate'] + results[sample_id]['multi_mapped_rate'] + too_many_loci
