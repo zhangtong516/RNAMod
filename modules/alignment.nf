@@ -1,7 +1,5 @@
 process STAR_ALIGN {
     storeDir "${params.outdir}/aligned"
-    
-    container 'https://depot.galaxyproject.org/singularity/star:2.7.2b--0'
 
     input:
     tuple val(sample_id), path(reads)
@@ -12,6 +10,7 @@ process STAR_ALIGN {
 
     script:
     """
+    
     STAR \
         --genomeDir ${params.genome} \
         --readFilesIn ${reads[0]} ${reads[1]} \

@@ -1,7 +1,7 @@
 process MACS2_PEAK_CALLING {
     storeDir "${params.outdir}/peaks"
     
-    container 'https://depot.galaxyproject.org/singularity/macs2:2.2.7.1--py39hf95cd2a_4'
+    
 
     input:
     tuple val(sample_id), path(clip_bams), path(input_bams)

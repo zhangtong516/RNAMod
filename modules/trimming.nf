@@ -1,7 +1,5 @@
 process FASTP {
     storeDir "${params.outdir}/trimmed"
-    
-    container 'https://depot.galaxyproject.org/singularity/fastp:0.23.2--h79da9fb_0'
 
     input:
     tuple val(sample_id), path(read1), path(read2)
@@ -24,7 +22,7 @@ process FASTP {
         --detect_adapter_for_pe \
         --n_base_limit 5 \
         --length_required 50 \
-        --thread ${task.cpus}
+        --thread ${task.cpus} \
         --qualified_quality_phred 30 \
         --thread ${task.cpus} 
     """

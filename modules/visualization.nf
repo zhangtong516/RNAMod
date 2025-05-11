@@ -2,8 +2,6 @@ params.outdir = "$projectDir/results"
 
 process BAM_COVERAGE {
     storeDir "${params.outdir}/bigwig"
-    
-    container 'https://depot.galaxyproject.org/singularity/deeptools:3.5.1--py_0'
 
     input:
     tuple val(sample_id), path(bam), path(input_bam)

@@ -1,7 +1,7 @@
 process CALCULATE_SIZE_FACTORS {
     storeDir "${params.outdir}/size_factors"
     
-    container 'https://depot.galaxyproject.org/singularity/r-deseq2:1.34.0--r41h399db7b_0'
+    
     
     input:
     path m6a_counts

@@ -1,0 +1,18 @@
+# Singularity container images
+singularity_images/
+
+# Nextflow specific
+.nextflow/
+.nextflow.log*
+work/
+
+# Results directory
+results/
+
+# Temporary files
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store

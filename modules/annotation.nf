@@ -1,7 +1,7 @@
 process PEAK_ANNOTATION {
     storeDir "${params.outdir}/annotation"
     
-    container 'docker://bioconductor/bioconductor_docker:RELEASE_3_16'
+    
 
     input:
     tuple val(sample_id), path(peaks)
