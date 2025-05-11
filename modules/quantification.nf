@@ -1,5 +1,5 @@
 process FEATURE_COUNTS {
-    storeDir "${params.outdir}/counts", mode: 'copy'
+    storeDir "${params.outdir}/counts"
     
     container 'https://depot.galaxyproject.org/singularity/subread:2.0.1--hed695b0_0'
 

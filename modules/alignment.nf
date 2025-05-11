@@ -1,5 +1,5 @@
 process STAR_ALIGN {
-    storeDir "${params.outdir}/aligned", mode: 'copy'
+    storeDir "${params.outdir}/aligned"
     
     container 'https://depot.galaxyproject.org/singularity/star:2.7.2b--0'
 

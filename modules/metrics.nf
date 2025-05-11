@@ -1,5 +1,5 @@
 process INSERT_SIZE_METRICS {
-    storeDir "${params.outdir}/metrics", mode: 'copy'
+    storeDir "${params.outdir}/metrics"
     
     container 'https://depot.galaxyproject.org/singularity/picard:2.27.4--hdfd78af_0'
 

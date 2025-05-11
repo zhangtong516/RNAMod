@@ -1,5 +1,5 @@
 process PEAK_ANNOTATION {
-    storeDir "${params.outdir}/annotation", mode: 'copy'
+    storeDir "${params.outdir}/annotation"
     
     container 'docker://bioconductor/bioconductor_docker:RELEASE_3_16'
 

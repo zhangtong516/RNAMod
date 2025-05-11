@@ -1,5 +1,5 @@
 process CALCULATE_SIZE_FACTORS {
-    storeDir "${params.outdir}/size_factors", mode: 'copy'
+    storeDir "${params.outdir}/size_factors"
     
     container 'https://depot.galaxyproject.org/singularity/r-deseq2:1.34.0--r41h399db7b_0'
     

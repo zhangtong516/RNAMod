@@ -1,5 +1,5 @@
 process COLLECT_QC_METRICS {
-    storeDir "${params.outdir}/qc", mode: 'copy'
+    storeDir "${params.outdir}/qc"
     
     container 'https://depot.galaxyproject.org/singularity/python:3.9--1'
 

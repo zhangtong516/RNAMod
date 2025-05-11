@@ -2,6 +2,14 @@
 
 nextflow.enable.dsl = 2
 
+
+
+// Default parameters
+params.samplesheet = "$projectDir/samplesheet.csv"  // Add this line
+params.outdir = "$projectDir/results"
+params.threads = Runtime.runtime.availableProcessors()
+params.help = false
+
 // Import modules
 include { FASTP } from './modules/trimming'
 include { STAR_ALIGN } from './modules/alignment'
@@ -12,14 +20,6 @@ include { CALCULATE_SIZE_FACTORS } from './modules/size_factors'
 include { QC } from './modules/qc'
 include { MACS2_PEAK_CALLING } from './modules/peak_calling'
 include { PEAK_ANNOTATION } from './modules/annotation'
-
-
-// Default parameters
-params.samplesheet = "$projectDir/samplesheet.csv"  // Add this line
-params.outdir = "$projectDir/results"
-params.threads = Runtime.runtime.availableProcessors()
-params.help = false
-
 
 // Print help message
 if (params.help) {

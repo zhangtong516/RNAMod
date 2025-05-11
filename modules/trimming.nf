@@ -1,5 +1,5 @@
 process FASTP {
-    storeDir "${params.outdir}/trimmed", mode: 'copy'
+    storeDir "${params.outdir}/trimmed"
     
     container 'https://depot.galaxyproject.org/singularity/fastp:0.23.2--h79da9fb_0'
 
