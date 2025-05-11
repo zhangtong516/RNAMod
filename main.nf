@@ -71,30 +71,39 @@ workflow {
     
     // Generate coverage tracks
     STAR_ALIGN.out.aligned_bam
-        .map{ key, value ->
-            // Extract the "grouping" key: first three parts separated by '_'
-            def groupKey = key.split('__')[0..2].join('__')
-            def type = key.split('__')[2]  // this determines if it's an x or y type
-            [groupKey, type, value]
-        }
-        .groupTuple(by: 0) // Use the 'by' parameter to specify grouping by the first element
-        .map { groupKey, types, values ->
-            // Split into x and y lists
-            def xs = []
-            def ys = []
-            
-            for (int i = 0; i < types.size(); i++) {
-                if (types[i] == 'm6A|m7G') {
-                    xs.add(values[i])
-                } else if (types[i] == 'Input') {
-                    ys.add(values[i])
-                }
-            }
-            
-            [groupKey, xs, ys]
-        }
-        .set { chanel_for_peak_calling }
-    
+    .map { item ->
+        def parts = item[0].split('__')
+        def prefix = parts[0] + '__' + parts[1]
+        def group = parts[2]  // This is 'a' or 'b'
+        
+        // Return a tuple of [prefix, group, value]
+        return [prefix, group, item[1]]
+    }
+    .groupTuple(by: [0, 1])  // Group by both prefix and a/b group
+    .map { prefix, group, values ->
+        // At this point, we have entries like: ['a_a', 'a', [1, 2]] and ['a_a', 'b', [3, 4]]
+        return [prefix, group, values]
+    }.groupTuple(by: 0)  // Group by just the prefix now
+    .map { prefix, groups, valuesList ->
+        // Now we have: ['a_a', ['a', 'b'], [[1, 2], [3, 4]]]
+        return [prefix, valuesList.flatten()]
+    }
+    .map { prefix, values ->
+        // Group values into pairs
+        def aValues = []
+        def bValues = []
+        
+        // Find index where 'b' values start
+        def half = values.size() / 2
+        aValues = values[0..<half]
+        bValues = values[half..<values.size()]
+        
+        return [prefix, aValues, bValues]
+    }
+    .map { prefix, aValues, bValues ->
+        // Format to match the desired output
+        return [prefix, aValues, bValues]
+    }..set { chanel_for_peak_calling } 
     // Call peaks using MACS2
     MACS2_PEAK_CALLING(chanel_for_peak_calling)
     
@@ -102,7 +111,6 @@ workflow {
     PEAK_ANNOTATION(MACS2_PEAK_CALLING.out.peaks, params.gtf)
     
     // Run QC module to collect and summarize metrics
-    ch_for_qc = 
     QC(
         FASTP.out.json_report,
         STAR_ALIGN.out.log_final

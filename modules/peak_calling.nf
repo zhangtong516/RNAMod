@@ -13,7 +13,7 @@ process MACS2_PEAK_CALLING {
     tuple val(sample_id), path("${sample_id}_treat_pileup.bdg"), path("${sample_id}_control_lambda.bdg"), emit: bedgraphs
 
     script:
-    def m6a_bam_files = m6a_bams.join(' ')
+    def clip_bam_files = clip_bams.join(' ')
     def input_bam_files = input_bams.join(' ')
     
     """
@@ -24,7 +24,7 @@ process MACS2_PEAK_CALLING {
         --nomodel \
         --extsize 100 \
         --keep-dup all \
-        -t ${m6a_bam_files} \
+        -t ${clip_bam_files} \
         -c ${input_bam_files} \
         -n ${sample_id}
     

@@ -6,7 +6,7 @@ process STAR_ALIGN {
 
     output:
     tuple val(sample_id), path("${sample_id}_Aligned.sortedByCoord.out.bam"), emit: aligned_bam
-    tuple val(sample_id), file("${sample_id}_Log.final.out"), emit: log_final
+    path "${sample_id}_Log.final.out", emit: log_final
 
     script:
     """

@@ -6,7 +6,7 @@ process FASTP {
 
     output:
     tuple val(sample_id), path("${sample_id}_R{1,2}.trimmed.fastq.gz"), emit: trimmed_reads
-    tuple val(sample_id), file("${sample_id}_fastp.json"), emit: json_report
+    path "${sample_id}_fastp.json", emit: json_report
     path "${sample_id}_fastp.html", emit: html_report
 
     script:
