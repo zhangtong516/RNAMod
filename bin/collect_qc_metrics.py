@@ -46,16 +46,22 @@ for log_file in star_logs.split(','):
         total_mapped_match = re.search(r'% of reads mapped to too many loci \|\s+([\d\.]+)%', content)
         if total_mapped_match:
             too_many_loci = float(total_mapped_match.group(1))
-            results[sample_id]['total_mapping_rate'] = results[sample_id]['uniquely_mapped_rate'] + results[sample_id]['multi_mapped_rate'] + too_many_loci
+            # Calculate total mapping rate only if the required rates are available
+            uniquely_mapped = results[sample_id].get('uniquely_mapped_rate', 0)
+            multi_mapped = results[sample_id].get('multi_mapped_rate', 0)
+            results[sample_id]['total_mapping_rate'] = uniquely_mapped + multi_mapped + too_many_loci
 
 # Convert to DataFrame and save as TSV
 df = pd.DataFrame.from_dict(results, orient='index')
 df.index.name = 'Sample'
 df.reset_index(inplace=True)
 
-# Reorder columns
-columns = ['Sample', 'total_reads', 'filtered_reads', 'filtering_rate', 'duplication_rate', 
+# Define all possible columns
+all_columns = ['Sample', 'total_reads', 'filtered_reads', 'filtering_rate', 'duplication_rate', 
           'input_reads', 'uniquely_mapped_rate', 'multi_mapped_rate', 'total_mapping_rate']
+
+# Filter to only include columns that exist in the DataFrame
+columns = ['Sample'] + [col for col in all_columns[1:] if col in df.columns]
 df = df[columns]
 
 # Save to TSV

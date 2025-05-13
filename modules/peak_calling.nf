@@ -1,8 +1,6 @@
 process MACS2_PEAK_CALLING {
     storeDir "${params.outdir}/peaks"
     
-    
-
     input:
     tuple val(sample_id), path(clip_bams), path(input_bams)
 

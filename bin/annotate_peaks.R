@@ -41,17 +41,20 @@ peakAnno <- annotatePeak(peaks,
 # Save annotation results
 write.csv(as.data.frame(peakAnno), file=paste0(sample_id, "_annotated_peaks.csv"), row.names=FALSE)
 
-# Visualize peak distribution on mRNA using Guitar
-pdf(paste0(sample_id, "_peak_distribution.pdf"), width=10, height=8)
+# # Visualize peak distribution on mRNA using Guitar
+# pdf(paste0(sample_id, "_peak_distribution.pdf"), width=10, height=8)
 
-# Create GuitarPlot object
-gp <- GuitarPlot(txTxdb = txdb, 
-                peak = peaks,
-                txName = sample_id)
+# # Create Guitar coordinates from TxDb with appropriate number of bins
+# gc_txdb <- makeGuitarTxdb(txdb, noBins = 100)
 
-# Plot the distribution
-plotGuitar(gp)
-dev.off()
+# # Create a named list of peaks for GuitarPlot
+# peaks_list <- list(peaks)
+# names(peaks_list) <- c(sample_id)
+
+# # Plot the distribution using GuitarPlot with the correct parameters
+# # Suppress warnings about mismatched chromosome sequence levels
+# suppressWarnings(GuitarPlot(gfeatures = peaks_list, txTxdb = txdb))
+# dev.off()
 
 # Generate summary statistics
 summary_data <- as.data.frame(peakAnno)

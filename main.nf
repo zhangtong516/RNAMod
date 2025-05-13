@@ -103,7 +103,7 @@ workflow {
     .map { prefix, aValues, bValues ->
         // Format to match the desired output
         return [prefix, aValues, bValues]
-    }..set { chanel_for_peak_calling } 
+    }.set { chanel_for_peak_calling } 
     // Call peaks using MACS2
     MACS2_PEAK_CALLING(chanel_for_peak_calling)
     
