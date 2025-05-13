@@ -1,7 +1,5 @@
 process PEAK_ANNOTATION {
     storeDir "${params.outdir}/annotation"
-    
-    
 
     input:
     tuple val(sample_id), path(peaks)
@@ -9,7 +7,7 @@ process PEAK_ANNOTATION {
 
     output:
     tuple val(sample_id), path("${sample_id}_annotated_peaks.csv"), emit: annotated_peaks
-    tuple val(sample_id), path("${sample_id}_peak_distribution.pdf"), emit: peak_distribution
+    // tuple val(sample_id), path("${sample_id}_peak_distribution.pdf"), emit: peak_distribution
 
     script:
     """
