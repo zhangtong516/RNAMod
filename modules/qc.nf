@@ -10,9 +10,9 @@ process COLLECT_QC_METRICS {
     path "qc_summary.html", emit: qc_html
 
     script:
+    def fastp_json_files = fastp_json_reports.join(',')
+    def star_log_files = star_logs.join(',')
 
-    def fastp_json_files = fastp_json_reports.collect().map{ items -> items.join(',') }
-    def star_log_files = star_logs.collect().map{ items -> items.join(',') }
     """
     python ${baseDir}/bin/collect_qc_metrics.py ${fastp_json_files} ${star_log_files}
     """
@@ -24,7 +24,7 @@ workflow QC {
     star_logs
 
     main:
-    COLLECT_QC_METRICS(fastp_reports.collect().join(','), star_logs.collect().join(','))
+    COLLECT_QC_METRICS(fastp_reports.collect(), star_logs.collect())
 
     emit:
     qc_summary = COLLECT_QC_METRICS.out.qc_summary
