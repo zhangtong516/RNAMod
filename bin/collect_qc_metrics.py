@@ -19,8 +19,8 @@ for json_file in fastp_json_reports.split(','):
         data = json.load(f)
         
         # Extract read counts and filtering stats
-        results[sample_id]['total_reads'] = data['summary']['before_filtering']['total_reads']
-        results[sample_id]['filtered_reads'] = data['summary']['after_filtering']['total_reads']
+        results[sample_id]['total_reads'] = data['summary']['before_filtering']['total_reads'] / 2 
+        results[sample_id]['filtered_reads'] = data['summary']['after_filtering']['total_reads'] / 2
         results[sample_id]['filtering_rate'] = round((1 - data['summary']['after_filtering']['total_reads'] / data['summary']['before_filtering']['total_reads']) * 100, 2)
         results[sample_id]['duplication_rate'] = round(data['duplication']['rate'] * 100, 2) if 'duplication' in data else 'NA'
 
@@ -45,6 +45,7 @@ for log_file in star_logs.split(','):
             
         total_mapped_match = re.search(r'% of reads mapped to too many loci \|\s+([\d\.]+)%', content)
         if total_mapped_match:
+            results[sample_id]['too_many_loci_rate'] = float(total_mapped_match.group(1))
             too_many_loci = float(total_mapped_match.group(1))
             # Calculate total mapping rate only if the required rates are available
             uniquely_mapped = results[sample_id].get('uniquely_mapped_rate', 0)
@@ -58,7 +59,7 @@ df.reset_index(inplace=True)
 
 # Define all possible columns
 all_columns = ['Sample', 'total_reads', 'filtered_reads', 'filtering_rate', 'duplication_rate', 
-          'input_reads', 'uniquely_mapped_rate', 'multi_mapped_rate', 'total_mapping_rate']
+          'input_reads', 'uniquely_mapped_rate', 'multi_mapped_rate', 'too_many_loci_rate']
 
 # Filter to only include columns that exist in the DataFrame
 columns = ['Sample'] + [col for col in all_columns[1:] if col in df.columns]
@@ -96,7 +97,21 @@ html += "<th>" + "</th><th>".join(columns) + "</th></tr>"
 for _, row in df.iterrows():
     html += "<tr>"
     for col in columns:
-        html += f"<td>{row[col]}</td>"
+        # Format numeric values with comma separators
+        if col != 'Sample' and isinstance(row[col], (int, float)) and not pd.isna(row[col]):
+            if isinstance(row[col], int):
+                # Format integers with comma separators
+                formatted_value = f"{row[col]:,}"
+            elif col.endswith('_rate'):
+                # Keep percentage values with 2 decimal places
+                formatted_value = f"{row[col]:.2f}"
+            else:
+                # Format floats with comma separators and 2 decimal places
+                formatted_value = f"{row[col]:,.2f}"
+            html += f"<td>{formatted_value}</td>"
+        else:
+            # Keep non-numeric values as is
+            html += f"<td>{row[col]}</td>"
     html += "</tr>"
 
 html += """        </table>
