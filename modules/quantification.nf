@@ -2,7 +2,7 @@ process FEATURE_COUNTS {
     storeDir "${params.outdir}/counts"
 
     input:
-    tuple val(sample_id), path(bam)
+    tuple val(sample_id), path(bam), val(genome_dir), val(gtf_path)
 
     output:
     tuple val(sample_id), file("${sample_id}_counts.txt"), emit: count_files
@@ -20,7 +20,7 @@ process FEATURE_COUNTS {
         -F GTF \
         -t exon \
         -T ${task.cpus} \
-        -a ${params.gtf} \
+        -a ${gtf_path} \
         -o ${sample_id}_counts.txt \
         ${bam}
     """

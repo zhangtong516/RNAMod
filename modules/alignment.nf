@@ -2,7 +2,7 @@ process STAR_ALIGN {
     storeDir "${params.outdir}/aligned"
 
     input:
-    tuple val(sample_id), path(reads)
+    tuple val(sample_id), path(reads), val(genome_dir), val(gtf_path)
 
     output:
     tuple val(sample_id), path("${sample_id}_Aligned.sortedByCoord.out.bam"), emit: aligned_bam
@@ -10,9 +10,8 @@ process STAR_ALIGN {
 
     script:
     """
-    
     STAR \
-        --genomeDir ${params.genome} \
+        --genomeDir ${genome_dir} \
         --readFilesIn ${reads[0]} ${reads[1]} \
         --outFilterMatchNminOverLread 0 \
         --outFilterScoreMinOverLread 0 \

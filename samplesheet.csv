@@ -1,0 +1,3 @@
+sampleName,libType,treatment,replicate,r1,r2,genome_prefix
+sample1,m6A,a,1,/path/to/sample1_R1.fastq.gz,/path/to/sample1_R2.fastq.gz,mm39
+sample2,m6A,a,2,/path/to/sample2_R1.fastq.gz,/path/to/sample2_R2.fastq.gz,hg38

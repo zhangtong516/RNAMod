@@ -2,8 +2,6 @@
 
 nextflow.enable.dsl = 2
 
-
-
 // Default parameters
 params.samplesheet = "$projectDir/samplesheet.csv"  // Add this line
 params.outdir = "$projectDir/results"
@@ -40,13 +38,22 @@ if (params.help) {
     exit 0
 }
 
-// Create channel for input reads
-
+// Create channel for input reads with genome and GTF paths
 Channel
     .fromPath(params.samplesheet)
     .splitCsv(header:true)
-    .map { row -> tuple(row.sampleName +"__" +row.libType +"__" +row.treatment +"__" +row.replicate,
-                        file(row.r1), file(row.r2)) }
+    .map { row -> 
+        // Get the genome prefix or use default
+        def prefix = row.genome_prefix ?: params.default_genome_prefix
+        
+        // Look up genome and GTF paths from the config
+        def genome_dir = params.genomes.containsKey(prefix) ? params.genomes[prefix].genome : params.genomes[params.default_genome_prefix].genome
+        def gtf_path = params.genomes.containsKey(prefix) ? params.genomes[prefix].gtf : params.genomes[params.default_genome_prefix].gtf
+        
+        tuple(row.sampleName +"__" +row.libType +"__" +row.treatment +"__" +row.replicate,
+              file(row.r1), file(row.r2),
+              genome_dir, gtf_path)
+    }
     .set { input_reads }
 
 // Main workflow
@@ -54,7 +61,7 @@ workflow {
     // Trim adapters
     FASTP(input_reads)
 
-    // Align reads
+    // Align reads with sample-specific genome
     STAR_ALIGN(FASTP.out.trimmed_reads)
 
     // Analyze insert size
@@ -107,8 +114,16 @@ workflow {
     // Call peaks using MACS2
     MACS2_PEAK_CALLING(chanel_for_peak_calling)
     
+    // In the workflow section, replace the PEAK_ANNOTATION line with:
+    
     // Annotate peaks using ChIPseeker and visualize with Guitar
-    PEAK_ANNOTATION(MACS2_PEAK_CALLING.out.peaks, params.gtf)
+    PEAK_ANNOTATION(
+        MACS2_PEAK_CALLING.out.peaks.join(
+            STAR_ALIGN.out.aligned_bam.map { sample_id, bam, genome_dir, gtf_path -> 
+                [sample_id, gtf_path] 
+            }
+        )
+    )
     
     // Run QC module to collect and summarize metrics
     QC(
