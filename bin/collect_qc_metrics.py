@@ -12,6 +12,8 @@ results = defaultdict(dict)
 # Process fastp JSON reports
 fastp_json_reports = sys.argv[1]
 star_logs = sys.argv[2]
+summary_tsv = sys.argv[3]
+summary_html = sys.argv[4]
 
 for json_file in fastp_json_reports.split(','):
     sample_id = os.path.basename(json_file).replace('_fastp.json', '')
@@ -66,7 +68,7 @@ columns = ['Sample'] + [col for col in all_columns[1:] if col in df.columns]
 df = df[columns]
 
 # Save to TSV
-df.to_csv('qc_summary.tsv', sep='\t', index=False)
+df.to_csv(summary_tsv, sep='\t', index=False)
 
 # Generate HTML report
 html = """<!DOCTYPE html>
@@ -119,5 +121,5 @@ html += """        </table>
 </html>
 """
 
-with open('qc_summary.html', 'w') as f:
+with open(summary_html, 'w') as f:
     f.write(html)

@@ -6,15 +6,17 @@ process COLLECT_QC_METRICS {
     path star_logs
 
     output:
-    path "qc_summary.tsv", emit: qc_summary
-    path "qc_summary.html", emit: qc_html
+    path "${params.batchName}_qc_summary.tsv", emit: qc_summary
+    path "${params.batchName}_qc_summary.html", emit: qc_html
 
     script:
     def fastp_json_files = fastp_json_reports.join(',')
     def star_log_files = star_logs.join(',')
+    def summary_tsv = "${params.batchName}_qc_summary.tsv"
+    def summary_html = "${params.batchName}_qc_summary.html"
 
     """
-    python ${baseDir}/bin/collect_qc_metrics.py ${fastp_json_files} ${star_log_files}
+    python ${baseDir}/bin/collect_qc_metrics.py ${fastp_json_files} ${star_log_files} ${summary_tsv} ${summary_html} 
     """
 }
 
