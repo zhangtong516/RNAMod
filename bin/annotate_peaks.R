@@ -23,9 +23,12 @@ sample_id <- args[3]
 # Create TxDb from GTF if provided, otherwise use mouse reference
 if (file.exists(gtf_file)) {
   txdb <- makeTxDbFromGFF(gtf_file, format="gtf")
+  gff <- importGff(gtf_file)
+  txdbFeatures <- getTxdbFeaturesFromGRanges(gff)
 } else {
   txdb <- TxDb.Mmusculus.UCSC.mm39.refGene
 }
+
 
 # Read peak file
 peaks <- readPeakFile(peak_file)
@@ -41,20 +44,19 @@ peakAnno <- annotatePeak(peaks,
 # Save annotation results
 write.csv(as.data.frame(peakAnno), file=paste0(sample_id, "_annotated_peaks.csv"), row.names=FALSE)
 
-# # Visualize peak distribution on mRNA using Guitar
-# pdf(paste0(sample_id, "_peak_distribution.pdf"), width=10, height=8)
 
-# # Create Guitar coordinates from TxDb with appropriate number of bins
-# gc_txdb <- makeGuitarTxdb(txdb, noBins = 100)
+###
+pdf(str_c(sample_id,"_annotated_peaks.pdf"), width=12, height=8)
 
-# # Create a named list of peaks for GuitarPlot
-# peaks_list <- list(peaks)
-# names(peaks_list) <- c(sample_id)
+plot1 = GuitarPlot(stBedFiles = peak_file, txTxdb = txdb, 
+                   stGroupName = sample_id,
+                   pltTxType ="mrna",enableCI=F)
 
-# # Plot the distribution using GuitarPlot with the correct parameters
-# # Suppress warnings about mismatched chromosome sequence levels
-# suppressWarnings(GuitarPlot(gfeatures = peaks_list, txTxdb = txdb))
-# dev.off()
+plot2 = plotAnnoPie(peakAnno, ndigit = 2)
+
+dev.off()
+
+
 
 # Generate summary statistics
 summary_data <- as.data.frame(peakAnno)

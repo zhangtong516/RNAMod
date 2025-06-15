@@ -2,7 +2,7 @@ process INSERT_SIZE_METRICS {
     storeDir "${params.outdir}/metrics"
 
     input:
-    tuple val(sample_id), path(bam)
+    tuple val(sample_id), path(bam), val(genome_dir), val(gtf_path), val(genome_fasta) 
 
     output:
     path "${sample_id}_insert_size_metrics.txt"

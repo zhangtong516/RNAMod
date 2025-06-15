@@ -2,10 +2,10 @@ process STAR_ALIGN {
     storeDir "${params.outdir}/aligned"
 
     input:
-    tuple val(sample_id), path(reads), val(genome_dir), val(gtf_path)
+    tuple val(sample_id), path(reads), val(genome_dir), val(gtf_path), val(genome_fasta) 
 
     output:
-    tuple val(sample_id), path("${sample_id}_Aligned.sortedByCoord.out.bam"), emit: aligned_bam
+    tuple val(sample_id), path("${sample_id}_Aligned.sortedByCoord.out.bam"), val(genome_dir), val(gtf_path), val(genome_fasta), emit: aligned_bam
     path "${sample_id}_Log.final.out", emit: log_final
 
     script:
