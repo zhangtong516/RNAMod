@@ -2,7 +2,7 @@ process PEAK_ANNOTATION {
     storeDir "${params.outdir}/annotation"
 
     input:
-    tuple val(sample_id), path(peaks), val(genome_dir), val(gtf_path), val(genome_fasta) 
+    tuple val(sample_id), path(peaks), val(geonome_dir), val(gtf_path)
 
     output:
     tuple val(sample_id), path("${sample_id}_annotated_peaks.csv"), emit: annotated_peaks

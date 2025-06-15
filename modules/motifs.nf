@@ -26,7 +26,7 @@ process MOTIFS {
     singularity exec -B ./:/workspace -W /workspace \
         ${params.cacheDir}/meme.sif fasta-shuffle-letters  ${sample_id}_summit_200bp.fa > shuffled_background.fa
 
-    singularity exec -B $(pwd):/workspace -W /workspace \
+    singularity exec -B ./:/workspace -W /workspace \
         ${params.cacheDir}/meme.sif streme --p  ${sample_id}_summit_200bp.fa \
             --n shuffled_background.fa --rna --minw 5 --maxw 8 \
             --nmotifs 5 --thresh 0.0001 \

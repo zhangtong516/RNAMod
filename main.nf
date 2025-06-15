@@ -49,6 +49,24 @@ Channel
     }
     .set { input_reads }
 
+    
+Channel
+    .fromPath(params.samplesheet)
+    .splitCsv(header:true)
+    .map { row -> 
+        // Get the genome prefix or use default
+        def prefix = row.genome_prefix ?: params.default_genome_prefix
+        
+        // Look up genome and GTF paths from the config
+        def gtf_path = params.genomes.containsKey(prefix) ? params.genomes[prefix].gtf : params.genomes[params.default_genome_prefix].gtf
+        def genome_dir = params.genomes.containsKey(prefix) ? params.genomes[prefix].genome : params.genomes[params.default_genome_prefix].genome
+
+        tuple(row.sampleName +"__" +row.libType +"__" +row.treatment +"__" +row.replicate,
+                genome_dir,
+                gtf_path)
+    }
+    .set { input_gtf }
+
 Channel
     .fromPath(params.samplesheet)
     .splitCsv(header:true)
@@ -79,7 +97,7 @@ workflow {
     INSERT_SIZE_METRICS(STAR_ALIGN.out.aligned_bam)
 
     // Count features and calculate size factors
-    FEATURE_COUNTS(STAR_ALIGN.out.aligned_bam)
+    FEATURE_COUNTS(STAR_ALIGN.out.aligned_bam.join(input_gtf))
     
     // Generate coverage tracks
     STAR_ALIGN.out.aligned_bam
@@ -95,7 +113,7 @@ workflow {
     .map { prefix, group,values  ->
         // At this point, we have entries like: ['a_a', 'a', [1, 2]] and ['a_a', 'b', [3, 4]]
         return [prefix, group, values ]
-    }.groupTuple(by: 0,3,4,5)  // Group by just the prefix now
+    }.groupTuple(by: 0)  // Group by just the prefix now
     .map { prefix, groups, valuesList ->
         // Now we have: ['a_a', ['a', 'b'], [[1, 2], [3, 4]]]
         return [prefix, valuesList.flatten()]
