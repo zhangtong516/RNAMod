@@ -61,7 +61,7 @@ Channel
         def gtf_path = params.genomes.containsKey(prefix) ? params.genomes[prefix].gtf : params.genomes[params.default_genome_prefix].gtf
         def genome_fasta = params.genomes.containsKey(prefix) ? params.genomes[prefix].fasta : params.genomes[params.default_genome_prefix].fasta
 
-        tuple(row.sampleName +"__" +row.libType +"__" +row.treatment +"__" +row.replicate, genome_dir, gtf_path, genome_fasta)
+        tuple(row.sampleName +"__" +row.libType, genome_dir, gtf_path, genome_fasta)
     }
     .set { input_genome }
 
@@ -81,12 +81,6 @@ workflow {
     // Count features and calculate size factors
     FEATURE_COUNTS(STAR_ALIGN.out.aligned_bam)
     
-
-    // CALCULATE_SIZE_FACTORS(
-    //     FEATURE_COUNTS.out.count_files.collect{ it[1] }.filter{ it.name =~ /m6A|m7G/ },
-    //     FEATURE_COUNTS.out.count_files.collect{ it[1] }.filter{ it.name =~ /input/ }
-    // )
-    
     // Generate coverage tracks
     STAR_ALIGN.out.aligned_bam
     .map { item ->
@@ -95,18 +89,18 @@ workflow {
         def group = parts[2]  // This is 'a' or 'b'
         
         // Return a tuple of [prefix, group, value]
-        return [prefix, group, item[1], item[2], item[3], item[4]]
+        return [prefix, group, item[1]]
     }
-    .groupTuple(by: [0, 1, 3, 4, 5])  // Group by both prefix and a/b group and genome files 
-    .map { prefix, group,values, genome_dir, gtf_file, genome_fasta  ->
+    .groupTuple(by: [0, 1])  // Group by both prefix and a/b group and genome files 
+    .map { prefix, group,values  ->
         // At this point, we have entries like: ['a_a', 'a', [1, 2]] and ['a_a', 'b', [3, 4]]
-        return [prefix, group, values, genome_dir, gtf_file, genome_fasta ]
+        return [prefix, group, values ]
     }.groupTuple(by: 0,3,4,5)  // Group by just the prefix now
-    .map { prefix, groups, valuesList , genome_dir, gtf_file, genome_fasta ->
+    .map { prefix, groups, valuesList ->
         // Now we have: ['a_a', ['a', 'b'], [[1, 2], [3, 4]]]
         return [prefix, valuesList.flatten()]
     }
-    .map { prefix, values, genome_dir, gtf_file, genome_fasta ->
+    .map { prefix, values ->
         // Group values into pairs
         def aValues = []
         def bValues = []
@@ -116,20 +110,20 @@ workflow {
         aValues = values[0..<half]
         bValues = values[half..<values.size()]
         
-        return [prefix, aValues, bValues, genome_dir, gtf_file, genome_fasta ]
+        return [prefix, aValues, bValues ]
     }
-    .map { prefix, aValues, bValues , genome_dir, gtf_file, genome_fasta ->
+    .map { prefix, aValues, bValues->
         // Format to match the desired output
-        return [prefix, aValues, bValues, genome_dir, gtf_file, genome_fasta ]
+        return [prefix, aValues, bValues ]
     }.set { chanel_for_peak_calling } 
     // Call peaks using MACS2
-    MACS2_PEAK_CALLING(chanel_for_peak_calling)
+    MACS2_PEAK_CALLING(chanel_for_peak_calling.join(input_genome))
     
     // Call motifs using STREME with genome_dir and gtf_path
-    MOTIFS(MACS2_PEAK_CALLING.out.peaks)
+    MOTIFS(MACS2_PEAK_CALLING.out.peaks.join(input_genome))
 
     // Annotate peaks using ChIPseeker and visualize with Guitar
-    PEAK_ANNOTATION(MACS2_PEAK_CALLING.out.peaks)
+    PEAK_ANNOTATION(MACS2_PEAK_CALLING.out.peaks.join(input_genome))
     
     // Run QC module to collect and summarize metrics
     QC(

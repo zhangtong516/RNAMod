@@ -14,16 +14,16 @@ process MOTIFS {
     """
     module load singularity  
     awk 'OFS="\t" {
-        summit_pos = $2 + $10
+        summit_pos = \$2 + \$10
         start = summit_pos - 100
         end = summit_pos + 100
         if (start < 0) start = 0
-        print $1, start, end, $4, $5, "."
+        print \$1, start, end, \$4, \$5, "."
     }' ${narrow_peaks} > ${sample_id}_summit_200bp.bed 
 
     bedtools getfasta -fi ${genome_fasta} -bed ${sample_id}_summit_200bp.bed -fo ${sample_id}_summit_200bp.fa
     
-    singularity exec -B $(pwd):/workspace -W /workspace \
+    singularity exec -B ./:/workspace -W /workspace \
         ${params.cacheDir}/meme.sif fasta-shuffle-letters  ${sample_id}_summit_200bp.fa > shuffled_background.fa
 
     singularity exec -B $(pwd):/workspace -W /workspace \

@@ -5,7 +5,7 @@ process MACS2_PEAK_CALLING {
     tuple val(sample_id), path(clip_bams), path(input_bams), val(genome_dir), val(gtf_file), val(genome_fasta) 
 
     output:
-    tuple val(sample_id), path("${sample_id}_peaks.narrowPeak"), val(genome_dir), val(gtf_file), val(genome_fasta), emit: peaks
+    tuple val(sample_id), path("${sample_id}_peaks.narrowPeak"), emit: peaks
     tuple val(sample_id), path("${sample_id}_peaks.xls"), emit: peak_xls
     tuple val(sample_id), path("${sample_id}_summits.bed"), emit: summits
     tuple val(sample_id), path("${sample_id}_treat_pileup.bdg"), path("${sample_id}_control_lambda.bdg"), emit: bedgraphs
