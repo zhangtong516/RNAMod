@@ -2,13 +2,15 @@ process FEATURE_COUNTS {
     storeDir "${params.outdir}/counts"
 
     input:
-    tuple val(sample_id), path(bam), val(genome_dir), val(gtf_path), val(genome_fasta) 
+    tuple val(sample_id), path(bam), val(genome_dir), val(gtf_path) 
 
     output:
     tuple val(sample_id), file("${sample_id}_counts.txt"), emit: count_files
 
     script:
     """
+    module load subread 
+    
     featureCounts \
         -p \
         -C \

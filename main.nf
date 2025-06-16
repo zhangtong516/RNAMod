@@ -90,8 +90,7 @@ workflow {
     FASTP(input_reads)
 
     // Align reads with sample-specific genome
-    ch_alignment = FASTP.out.trimmed_reads.join(input_genome)  
-    STAR_ALIGN(ch_alignment)
+    STAR_ALIGN( FASTP.out.trimmed_reads.join(input_gtf))
 
     // Analyze insert size
     INSERT_SIZE_METRICS(STAR_ALIGN.out.aligned_bam)
