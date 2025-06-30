@@ -23,8 +23,8 @@ sample_id <- args[3]
 # Create TxDb from GTF if provided, otherwise use mouse reference
 if (file.exists(gtf_file)) {
   txdb <- makeTxDbFromGFF(gtf_file, format="gtf")
-  gff <- importGff(gtf_file)
-  txdbFeatures <- getTxdbFeaturesFromGRanges(gff)
+  # gff <- importGtf(gtf_file)
+  # txdbFeatures <- getTxdbFeaturesFromGRanges(gff)
 } else {
   txdb <- TxDb.Mmusculus.UCSC.mm39.refGene
 }
@@ -32,12 +32,12 @@ if (file.exists(gtf_file)) {
 
 # Read peak file
 peaks <- readPeakFile(peak_file)
-
+peaks <- peaks[seqlevels(peaks) %in% seqlevels(txdb)]
+rtracklayer::export.bed(peaks, con="tmp.bed")
 # Annotate peaks
 peakAnno <- annotatePeak(peaks, 
                        tssRegion=c(-3000, 0),
                        TxDb=txdb,
-                       annoDb="org.Mm.eg.db",
                        sameStrand=TRUE,
                        genomicAnnotationPriority = c("5UTR", "3UTR", "Exon", "Intron", "Promoter", "Downstream", "Intergenic"))
 
@@ -46,17 +46,18 @@ write.csv(as.data.frame(peakAnno), file=paste0(sample_id, "_annotated_peaks.csv"
 
 
 ###
-pdf(str_c(sample_id,"_annotated_peaks.pdf"), width=12, height=8)
+pdf(paste0(sample_id,"_annotated_peaks.pdf"), width=12, height=8)
 
-plot1 = GuitarPlot(stBedFiles = peak_file, txTxdb = txdb, 
+plot1 = GuitarPlot(stBedFiles = "tmp.bed", txTxdb = txdb, 
                    stGroupName = sample_id,
                    pltTxType ="mrna",enableCI=F)
 
 plot2 = plotAnnoPie(peakAnno, ndigit = 2)
 
+plot1 
+plot2 
+
 dev.off()
-
-
 
 # Generate summary statistics
 summary_data <- as.data.frame(peakAnno)

@@ -13,12 +13,13 @@ include { FASTP } from './modules/trimming'
 include { STAR_ALIGN } from './modules/alignment'
 include { INSERT_SIZE_METRICS } from './modules/metrics'
 include { FEATURE_COUNTS } from './modules/quantification'
-include { BAM_COVERAGE } from './modules/visualization'
+// include { BAM_COVERAGE } from './modules/visualization'
 include { CALCULATE_SIZE_FACTORS } from './modules/size_factors'
 include { QC } from './modules/qc'
 include { MACS2_PEAK_CALLING } from './modules/peak_calling'
 include { PEAK_ANNOTATION } from './modules/annotation'
 include { MOTIFS } from './modules/motifs'
+include { LIFTOVER } from './modules/liftover' // Import the new module
 
 // Print help message
 if (params.help) {
@@ -45,44 +46,9 @@ Channel
     .splitCsv(header:true)
     .map { row -> 
         tuple(row.sampleName +"__" +row.libType +"__" +row.treatment +"__" +row.replicate,
-              file(row.r1), file(row.r2))
+              file(row.r1), file(row.r2), val(row.genome_prefix))
     }
     .set { input_reads }
-
-    
-Channel
-    .fromPath(params.samplesheet)
-    .splitCsv(header:true)
-    .map { row -> 
-        // Get the genome prefix or use default
-        def prefix = row.genome_prefix ?: params.default_genome_prefix
-        
-        // Look up genome and GTF paths from the config
-        def gtf_path = params.genomes.containsKey(prefix) ? params.genomes[prefix].gtf : params.genomes[params.default_genome_prefix].gtf
-        def genome_dir = params.genomes.containsKey(prefix) ? params.genomes[prefix].genome : params.genomes[params.default_genome_prefix].genome
-
-        tuple(row.sampleName +"__" +row.libType +"__" +row.treatment +"__" +row.replicate,
-                genome_dir,
-                gtf_path)
-    }
-    .set { input_gtf }
-
-Channel
-    .fromPath(params.samplesheet)
-    .splitCsv(header:true)
-    .map { row -> 
-        // Get the genome prefix or use default
-        def prefix = row.genome_prefix ?: params.default_genome_prefix
-        
-        // Look up genome and GTF paths from the config
-        def genome_dir = params.genomes.containsKey(prefix) ? params.genomes[prefix].genome : params.genomes[params.default_genome_prefix].genome
-        def gtf_path = params.genomes.containsKey(prefix) ? params.genomes[prefix].gtf : params.genomes[params.default_genome_prefix].gtf
-        def genome_fasta = params.genomes.containsKey(prefix) ? params.genomes[prefix].fasta : params.genomes[params.default_genome_prefix].fasta
-
-        tuple(row.sampleName +"__" +row.libType, genome_dir, gtf_path, genome_fasta)
-    }
-    .set { input_genome }
-
 
 // Main workflow
 workflow {
@@ -90,14 +56,35 @@ workflow {
     FASTP(input_reads)
 
     // Align reads with sample-specific genome
-    STAR_ALIGN( FASTP.out.trimmed_reads.join(input_gtf))
+    STAR_ALIGN(FASTP.out.trimmed_reads)
 
     // Analyze insert size
     INSERT_SIZE_METRICS(STAR_ALIGN.out.aligned_bam)
 
     // Count features and calculate size factors
-    FEATURE_COUNTS(STAR_ALIGN.out.aligned_bam.join(input_gtf))
+    FEATURE_COUNTS(STAR_ALIGN.out.aligned_bam)
     
+
+    // prepare for diffBind: non-merged single replicates peak files. 
+    STAR_ALIGN.out.aligned_bam
+    .map { item ->
+        def parts = item[0].split('__')
+        def prefix = parts[0] + '__' + parts[1] + "__" + parts[3]
+        def group = parts[2]  // This is 'a' or 'b'
+        
+        // Return a tuple of [prefix, group, value]
+        return [prefix, group, item[1], item[2]]
+    }.branch { 
+        inputs: it[1] =~ /Input/
+        treated: true
+    }.set{ branched_bam }
+
+    ch_bam_inputs = branched_bam.inputs.map{ [item[0], item[2], itemp[3]] }
+    ch_bam_treated = branched_bam.treated.map{ [item[0], item[2]] } 
+    chanel_for_peak_calling_single = ch_bam_treated.join(ch_bam_inputs)
+    // Call peaks using MACS2
+    MACS2_PEAK_CALLING_SINGLE(chanel_for_peak_calling_single) 
+
     // Generate coverage tracks
     STAR_ALIGN.out.aligned_bam
     .map { item ->
@@ -106,18 +93,18 @@ workflow {
         def group = parts[2]  // This is 'a' or 'b'
         
         // Return a tuple of [prefix, group, value]
-        return [prefix, group, item[1]]
-    }
-    .groupTuple(by: [0, 1])  // Group by both prefix and a/b group and genome files 
-    .map { prefix, group,values  ->
+        return [prefix, group, item[1], item[2]]
+    } 
+    .groupTuple(by: [0, 1, 3])  // Group by both prefix and a/b group and genome files 
+    .map { prefix, group, genome_prefix, values  ->
         // At this point, we have entries like: ['a_a', 'a', [1, 2]] and ['a_a', 'b', [3, 4]]
-        return [prefix, group, values ]
+        return [prefix, group, genome_prefix, values] 
     }.groupTuple(by: 0)  // Group by just the prefix now
-    .map { prefix, groups, valuesList ->
+    .map { prefix, groups, genome_prefix, valuesList ->
         // Now we have: ['a_a', ['a', 'b'], [[1, 2], [3, 4]]]
-        return [prefix, valuesList.flatten()]
+        return [prefix, genome_prefix,  valuesList.flatten()]
     }
-    .map { prefix, values ->
+    .map { prefix, genome_prefix, values ->
         // Group values into pairs
         def aValues = []
         def bValues = []
@@ -127,20 +114,22 @@ workflow {
         aValues = values[0..<half]
         bValues = values[half..<values.size()]
         
-        return [prefix, aValues, bValues ]
+        return [prefix, genome_prefix, aValues, bValues ]
     }
-    .map { prefix, aValues, bValues->
+    .map { prefix, genome_prefix, aValues, bValues->
         // Format to match the desired output
-        return [prefix, aValues, bValues ]
+        return [prefix, aValues, bValues, genome_prefix ]
     }.set { chanel_for_peak_calling } 
     // Call peaks using MACS2
-    MACS2_PEAK_CALLING(chanel_for_peak_calling.join(input_genome))
-    
-    // Call motifs using STREME with genome_dir and gtf_path
-    MOTIFS(MACS2_PEAK_CALLING.out.peaks.join(input_genome))
+    MACS2_PEAK_CALLING(chanel_for_peak_calling)
 
+    // Call motifs using STREME with genome_dir and gtf_path
+    MOTIFS(MACS2_PEAK_CALLING.out.peaks)
+
+    // Liftover non-hg38 peaks
+    LIFTOVER(MACS2_PEAK_CALLING.out.peaks)
     // Annotate peaks using ChIPseeker and visualize with Guitar
-    PEAK_ANNOTATION(MACS2_PEAK_CALLING.out.peaks.join(input_genome))
+    PEAK_ANNOTATION(LIFTOVER.out.lifted_peaks)
     
     // Run QC module to collect and summarize metrics
     QC(

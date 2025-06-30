@@ -2,36 +2,23 @@ process MOTIFS {
     storeDir "${params.outdir}/motifs"
 
     input:
-    tuple val(sample_id), path(narrow_peaks), val(genome_dir), val(gtf_file), val(genome_fasta)
+    tuple val(sample_id), path(narrow_peaks), val(genome_prefix) 
 
     output:
-    path "${sample_id}_motifs"
-    path "${sample_id}_plot_motifs.pdf"
-    path "${sample_id}_streme_summary_table.txt"
-    path "${sample_id}_streme_motif_similarity_matrix.txt" 
+    file("${sample_id}_motifs_logoPlot.pdf")
+    file("${sample_id}_motif_summary.csv")
 
     script:    
-    """
-    module load singularity  
-    awk 'OFS="\t" {
-        summit_pos = \$2 + \$10
-        start = summit_pos - 100
-        end = summit_pos + 100
-        if (start < 0) start = 0
-        print \$1, start, end, \$4, \$5, "."
-    }' ${narrow_peaks} > ${sample_id}_summit_200bp.bed 
-
-    bedtools getfasta -fi ${genome_fasta} -bed ${sample_id}_summit_200bp.bed -fo ${sample_id}_summit_200bp.fa
+    def genome_fasta = "${params.reference_dir}/${genome_prefix}/${genome_prefix}.fa"
     
-    singularity exec -B ./:/workspace -W /workspace \
-        ${params.cacheDir}/meme.sif fasta-shuffle-letters  ${sample_id}_summit_200bp.fa > shuffled_background.fa
+    """
+    bedtools getfasta -fi ${genome_fasta} -bed ${narrow_peaks} -fo ${sample_id}_narrowpeak.fa
+    bedtools shuffle -i ${narrow_peaks} -g ${genome_fasta}.fai -excl ${narrow_peaks} > ${sample_id}_background.bed
+    bedtools getfasta -fi ${genome_fasta} -bed ${sample_id}_background.bed -fo ${sample_id}_background.fa
+    # singularity exec -B ./:/workspace -W /workspace \
+    #      ${params.cacheDir}/meme.sif fasta-shuffle-letters ${sample_id}_narrowpeak.fa > shuffled_background.fa
 
-    singularity exec -B ./:/workspace -W /workspace \
-        ${params.cacheDir}/meme.sif streme --p  ${sample_id}_summit_200bp.fa \
-            --n shuffled_background.fa --rna --minw 5 --maxw 8 \
-            --nmotifs 5 --thresh 0.0001 \
-            --oc ${sample_id}_motifs
-    Rscript ${baseDir}/bin/parse_streme.R ${sample_id}_motifs/streme.xml ${sample_id}
+    Rscript ${baseDir}/bin/find_motifs.R ${sample_id}_narrowpeak.fa ${sample_id}_background.fa ${sample_id}
 
     """
 }

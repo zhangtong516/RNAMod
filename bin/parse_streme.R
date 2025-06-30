@@ -25,9 +25,9 @@ parse_streme_xml <- function(streme_file) {
     motif_id <- xml_attr(motif, "id")
     motif_alt <- xml_attr(motif, "alt")
     motif_width <- as.numeric(xml_attr(motif, "width"))
-    motif_sites <- as.numeric(xml_attr(motif, "sites"))
-    motif_llr <- as.numeric(xml_attr(motif, "llr"))
-    motif_evalue <- as.numeric(xml_attr(motif, "e"))
+    motif_sites <- as.numeric(xml_attr(motif, "total_sites"))
+    motif_llr <- as.numeric(xml_attr(motif, "test_log_pvalue"))
+    motif_evalue <- as.numeric(xml_attr(motif, "test_evalue"))
     
     # Extract position-specific scoring matrix
     pos_nodes <- xml_find_all(motif, ".//pos")
@@ -78,7 +78,7 @@ plot_streme_logo <- function(pwm, motif_info, title_prefix = "STREME Motif") {
   }
   
     main_title <- paste(title_prefix, motif_info$id, info_text, sep = " ")
-    p <- ggseqlogo(pwm_df, method = 'bits') +
+    p <- ggseqlogo(pwm, method = 'bits') +
         ggtitle(main_title) +
         theme_minimal() +
         theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
@@ -96,28 +96,22 @@ process_streme_and_plot <- function(streme_file, output_prefix, use_ggplot = TRU
   if (length(streme_data$pwms) == 0) {
     stop("No motifs found in STREME output file")
   }
-  
   cat("Found", length(streme_data$pwms), "motifs\n")
-  
+
+  filename <- paste0(output_prefix, "_plot_motifs.pdf")
+  # Open graphics device
+  pdf(filename, width = 800, height = 400)
   # Plot each motif
-  for (motif_id in names(streme_data$pwms)) {
+  for (motif_id in names(streme_data$pwms)[1:5]) {
     pwm <- streme_data$pwms[[motif_id]]
     motif_info <- streme_data$info[[motif_id]]
     
     cat("Plotting motif:", motif_id, "\n")
-    
-    # Create filename
-    filename <- paste0(output_prefix, "_plot_motifs.pdf")
-    
-    # Open graphics device
-    pdf(filename, width = 800, height = 400)
-    
-    plot_streme_logo(pwm, motif_info, "STREME")
-    
-    dev.off()
+    p =plot_streme_logo(pwm, motif_info, "STREME")
+    print(p)
     cat("Saved plot to:", filename, "\n")
   }
-  
+  dev.off()
   return(streme_data)
 }
 
