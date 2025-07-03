@@ -46,18 +46,14 @@ write.csv(as.data.frame(peakAnno), file=paste0(sample_id, "_annotated_peaks.csv"
 
 
 ###
-pdf(paste0(sample_id,"_annotated_peaks.pdf"), width=12, height=8)
-
-plot1 = GuitarPlot(stBedFiles = "tmp.bed", txTxdb = txdb, 
-                   stGroupName = sample_id,
-                   pltTxType ="mrna",enableCI=F)
-
-plot2 = plotAnnoPie(peakAnno, ndigit = 2)
-
-plot1 
-plot2 
-
-dev.off()
+# pdf(paste0(sample_id,"_annotated_peaks.pdf"), width=12, height=8)
+# plot1 = GuitarPlot(stBedFiles = "tmp.bed", txTxdb = txdb, 
+                  #  stGroupName = sample_id,
+                  #  pltTxType ="mrna",enableCI=F)
+# plot2 = plotAnnoPie(peakAnno, ndigit = 2)
+# plot1 
+# plot2 
+# dev.off()
 
 # Generate summary statistics
 summary_data <- as.data.frame(peakAnno)

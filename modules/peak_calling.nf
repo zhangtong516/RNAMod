@@ -2,7 +2,7 @@ process MACS2_PEAK_CALLING {
     storeDir "${params.outdir}/peaks"
     
     input:
-    tuple val(sample_id), path(clip_bams), path(input_bams), val(genome_prefix) 
+    tuple val(sample_id), path(clip_bams), path(input_bams), val(genome_prefix)
 
     output:
     tuple val(sample_id), path("${sample_id}_peaks.narrowPeak"), val(genome_prefix), emit: peaks
@@ -39,7 +39,7 @@ process MACS2_PEAK_CALLING_SINGLE {
     storeDir "${params.outdir}/peaks_single_replicate"
     
     input:
-    tuple val(sample_id), path(clip_bams), path(input_bams), val(genome_prefix) 
+    tuple val(sample_id), path(clip_bam), path(input_bam), val(genome_prefix) 
 
     output:
     tuple val(sample_id), path("${sample_id}_peaks.narrowPeak"), val(genome_prefix), emit: peaks

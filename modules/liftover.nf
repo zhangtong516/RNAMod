@@ -1,18 +1,14 @@
 process LIFTOVER {
-    tag "$sample_id"
-    label 'process_low'
     storeDir "${params.outdir}/liftover"
-
 
     input:
     tuple val(sample_id), path(peaks), val(genome_prefix)
-    path chain_file
 
     output:
-    tuple val(sample_id), path("*.lifted.bed"), val(genome_prefix), emit: lifted_peaks
+    tuple val(sample_id), path("${sample_id}_${genome_prefix}ToHg38.lifted.bed"), val(genome_prefix), emit: lifted_peaks
 
     script:
-    def chain_file = "${params.reference_dir}/${genome_prefix}/${genome_prefix}ToHg38.chain.gz"
+    def chain_file = "${params.reference_dir}/${genome_prefix}/${genome_prefix}ToHg38.over.chain.gz"
     def out_file = "${sample_id}_${genome_prefix}ToHg38.lifted.bed"
     if (genome_prefix == 'hg38') {
         """
@@ -20,11 +16,14 @@ process LIFTOVER {
         """
     } else {
         """
+        cut -f1-6  ${peaks} > tmp.bed 
         liftOver \
-            ${peaks} \
+            tmp.bed \
             ${chain_file} \
-            ${out_file} \
-            ${sample_id}_${genome_prefix}.unmapped.bed
+            tmp_out.bed \
+            tmp_out.unmapped
+        Rscript ${baseDir}/bin/complete_lifted_bed.R tmp_out.bed ${peaks} tmp_out.unsorted.bed 
+        bedtools sort -i tmp_out.unsorted.bed > ${out_file} 
         """
     }
 }
