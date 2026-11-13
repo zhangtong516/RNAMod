@@ -181,7 +181,7 @@ getPWM <- function(sequences, letters = c('A', 'C', 'G', 'T')) {
 
 run_motif = function(query_fasta, control_fasta,
                      motifWidth = 6, 
-                     motifN = 5,
+                     motifN = 10,
                      maxMismatch = 1, 
                      nCores = 2) {
   querySeqs = Biostrings::readDNAStringSet(query_fasta)
